@@ -16,5 +16,8 @@
 .vscode
 .DS_Store
 
+# Air log
+build-errors.log
+
 # Dependency directories (remove the comment below to include it)
 # vendor/

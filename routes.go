@@ -68,6 +68,9 @@ func (s *Server) setupRoutes() (err error) {
 	s.router.NoRoute(s.NotFound)
 	s.router.NoMethod(s.NotAllowed)
 
+	// Entry point to primary web page
+	s.router.GET("/", s.Index)
+
 	// Add the v1 API routes (currently the only version)
 	v1 := s.router.Group("/v1")
 	{
