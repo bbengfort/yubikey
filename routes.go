@@ -15,7 +15,7 @@ import (
 func (s *Server) setupRoutes() (err error) {
 	// Setup HTML template renderer
 	var html *template.Template
-	if html, err = template.ParseFS(content, "templates/*.html"); err != nil {
+	if html, err = template.ParseFS(content, "templates/*.html", "templates/**/*.html"); err != nil {
 		return err
 	}
 	s.router.SetHTMLTemplate(html)
