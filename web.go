@@ -11,17 +11,16 @@ func (s *Server) Index(c *gin.Context) {
 	data.Version = Version()
 
 	for _, user := range s.users.users {
-		creds := len(user.WebAuthnCredentials()) > 0
 		data.Users = append(data.Users, struct {
 			ID          string
 			Name        string
 			Email       string
-			Credentials bool
+			Credentials int
 		}{
 			ID:          user.ID.String(),
 			Name:        user.Name,
 			Email:       user.Email,
-			Credentials: creds,
+			Credentials: len(user.WebAuthnCredentials()),
 		})
 	}
 
@@ -54,6 +53,6 @@ type UserList struct {
 		ID          string
 		Name        string
 		Email       string
-		Credentials bool
+		Credentials int
 	}
 }

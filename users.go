@@ -19,6 +19,7 @@ func NewUsers() *Users {
 	return &Users{
 		users:  make(map[uuid.UUID]*User),
 		emails: make(map[string]uuid.UUID),
+		creds:  make(map[string]struct{}),
 	}
 }
 
@@ -26,6 +27,7 @@ type Users struct {
 	sync.RWMutex
 	users  map[uuid.UUID]*User
 	emails map[string]uuid.UUID
+	creds  map[string]struct{}
 }
 
 func (db *Users) Lookup(id interface{}) (_ *User, err error) {
@@ -67,6 +69,7 @@ func (db *Users) NewUser(name, email string) (*User, error) {
 		Name:        name,
 		Email:       email,
 		credentials: make([]webauthn.Credential, 0, 1),
+		db:          db,
 	}
 
 	db.Lock()
@@ -80,12 +83,22 @@ func (db *Users) NewUser(name, email string) (*User, error) {
 	return user, nil
 }
 
+func (db *Users) CredentialExists(creds *webauthn.Credential) bool {
+	ids := creds.Descriptor().CredentialID.String()
+
+	db.RLock()
+	_, ok := db.creds[ids]
+	db.RUnlock()
+	return ok
+}
+
 type User struct {
 	sync.RWMutex
 	ID          uuid.UUID
 	Name        string
 	Email       string
 	credentials []webauthn.Credential
+	db          *Users
 }
 
 // WebAuthnID provides the user handle of the user account. A user handle is an opaque byte sequence with a maximum
@@ -150,6 +163,11 @@ func (u *User) AddCredential(cred webauthn.Credential) {
 	u.Lock()
 	defer u.Unlock()
 	u.credentials = append(u.credentials, cred)
+
+	ids := cred.Descriptor().CredentialID.String()
+	u.db.Lock()
+	defer u.db.Unlock()
+	u.db.creds[ids] = struct{}{}
 }
 
 // WebAuthnIcon is a deprecated option.

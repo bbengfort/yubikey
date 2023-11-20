@@ -1,6 +1,7 @@
 package yubikey
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,8 +32,16 @@ func (s *Server) BeginRegistration(c *gin.Context) {
 	// Find or create a new user
 	user, err := s.users.NewUser(form.Name, form.Email)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		if errors.Is(err, ErrUserAlreadyExists) {
+			if user, err = s.users.GetUser(form.Email); err != nil {
+				log.Warn().Err(err).Msg("could not retrieve an existing user")
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	// Ensure the same authenticator cannot be registered twice
@@ -85,6 +94,12 @@ func (s *Server) FinishRegistration(c *gin.Context) {
 	if credential, err = s.authn.FinishRegistration(user, session, c.Request); err != nil {
 		log.Warn().Err(err).Msg("could not finish registration")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check to make sure the credential is not already assigned to a user.
+	if s.users.CredentialExists(credential) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "credential already assigned"})
 		return
 	}
 
