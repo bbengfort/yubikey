@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/rs/zerolog/log"
 )
@@ -34,7 +35,12 @@ func (s *Server) BeginRegistration(c *gin.Context) {
 		return
 	}
 
-	opts, session, err := s.authn.BeginRegistration(user)
+	// Ensure the same authenticator cannot be registered twice
+	registerOptions := func(credCreationOpts *protocol.PublicKeyCredentialCreationOptions) {
+		credCreationOpts.CredentialExcludeList = user.CredentialExcludeList()
+	}
+
+	opts, session, err := s.authn.BeginRegistration(user, registerOptions)
 	if err != nil {
 		log.Error().Err(err).Msg("could not begin webauthn registration")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not begin webauthn registration"})

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 )
@@ -129,6 +130,20 @@ func (u *User) WebAuthnCredentials() []webauthn.Credential {
 	u.RLock()
 	defer u.RUnlock()
 	return u.credentials
+}
+
+func (u *User) CredentialExcludeList() []protocol.CredentialDescriptor {
+	u.RLock()
+	defer u.RUnlock()
+	exclude := make([]protocol.CredentialDescriptor, 0, len(u.credentials))
+	for _, cred := range u.credentials {
+		descriptor := protocol.CredentialDescriptor{
+			Type:         protocol.PublicKeyCredentialType,
+			CredentialID: cred.ID,
+		}
+		exclude = append(exclude, descriptor)
+	}
+	return exclude
 }
 
 func (u *User) AddCredential(cred webauthn.Credential) {

@@ -59,6 +59,12 @@
           publicKey.challenge = bufferDecode(publicKey.challenge);
           publicKey.user.id = bufferDecode(publicKey.user.id);
 
+          if (publicKey.excludeCredentials) {
+            for (var i=0; i < publicKey.excludeCredentials.length; i++) {
+              publicKey.excludeCredentials[i].id = bufferDecode(publicKey.excludeCredentials[i].id);
+            }
+          }
+
           return navigator.credentials.create({
             publicKey: publicKey
           });

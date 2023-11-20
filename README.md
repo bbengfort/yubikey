@@ -2,6 +2,8 @@
 
 Messing with yubikeys and the web authentication protocol.
 
+Excellent blog post on the topic: [www.herbie.dev/blog/webauthn-basic-web-client-server/](https://www.herbie.dev/blog/webauthn-basic-web-client-server/).
+
 ## Networking
 
 Edit the `/etc/hosts` file on your computer and add the following line:
