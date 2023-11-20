@@ -87,10 +87,74 @@ func (s *Server) FinishRegistration(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "registration successful"})
 }
 
+type LoginForm struct {
+	Email string `json:"email"`
+}
+
 func (s *Server) BeginLogin(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "coming soon"})
+	form := &LoginForm{}
+	if err := c.BindJSON(form); err != nil {
+		log.Error().Err(err).Msg("could not bind login form")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "could not bind login form"})
+		return
+	}
+
+	if form.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email is required to login"})
+		return
+	}
+
+	// Look up user
+	user, err := s.users.GetUser(form.Email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	opts, session, err := s.authn.BeginLogin(user)
+	if err != nil {
+		log.Error().Err(err).Msg("could not begin webauthn login")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Session values must be stored
+	if err := s.sessions.SaveWebauthnSession("authentication", session, c.Request, c.Writer); err != nil {
+		log.Error().Err(err).Msg("could not save session data")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, opts)
 }
 
 func (s *Server) FinishLogin(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "coming soon"})
+	var (
+		user    *User
+		session webauthn.SessionData
+		err     error
+	)
+
+	// Load the session data
+	if session, err = s.sessions.GetWebauthnSession("authentication", c.Request); err != nil {
+		log.Warn().Err(err).Msg("could not get session data from request")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Load the user from the session user ID
+	// TODO: do we have to sidechannel this information for security?
+	if user, err = s.users.Lookup(session.UserID); err != nil {
+		log.Warn().Err(err).Msg("could not lookup user from session data")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err = s.authn.FinishLogin(user, session, c.Request); err != nil {
+		log.Warn().Err(err).Msg("could not finish registration")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "login successful"})
 }
