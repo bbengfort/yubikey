@@ -1,6 +1,25 @@
 {{ template "layout" . }}
 {{ define "content" }}
 <div class="row">
-
+  <div class="col">
+    <table class="table">
+      <thead>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Credentials</th>
+      </thead>
+      <tbody>
+        {{ range .Users }}
+        <tr>
+          <td>{{ .ID }}</td>
+          <td>{{ .Name }}</td>
+          <td>{{ .Email }}</td>
+          <td>{{ .Credentials }}</td>
+        </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
 </div>
 {{ end }}

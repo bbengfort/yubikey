@@ -7,7 +7,25 @@ import (
 )
 
 func (s *Server) Index(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", &WebData{Version: Version()})
+	data := &UserList{}
+	data.Version = Version()
+
+	for _, user := range s.users.users {
+		creds := len(user.WebAuthnCredentials()) > 0
+		data.Users = append(data.Users, struct {
+			ID          string
+			Name        string
+			Email       string
+			Credentials bool
+		}{
+			ID:          user.ID.String(),
+			Name:        user.Name,
+			Email:       user.Email,
+			Credentials: creds,
+		})
+	}
+
+	c.HTML(http.StatusOK, "index.html", data)
 }
 
 func (s *Server) Register(c *gin.Context) {
@@ -28,4 +46,14 @@ func (s *Server) NotAllowed(c *gin.Context) {
 
 type WebData struct {
 	Version string
+}
+
+type UserList struct {
+	WebData
+	Users []struct {
+		ID          string
+		Name        string
+		Email       string
+		Credentials bool
+	}
 }
