@@ -1,4 +1,51 @@
 {{ template "layout" . }}
 {{ define "content" }}
-<h1>Hello World Again!</h1>
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <h2>Register Yubikey</h2>
+    <form id="registerForm">
+      <div class="mb-3">
+        <label for="email" class="form-label">Email Address</label>
+        <input type="email" class="form-control" id="email" name="email" placeholder="Enter valid email address" aria-describedby="emailHelp" required />
+        <div id="emailHelp" class="form-text">Your email will act as your username</div>
+      </div>
+      <div class="mb-3">
+        <label for="name" class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="name" name="name" placeholder="Enter your full name" aria-describedby="nameHelp" required />
+        <div id="nameHelp" class="form-text">Please enter your first and last name</div>
+      </div>
+      <button id="submitRegistration" type="submit" class="btn btn-primary">Register</button>
+    </form>
+  </div>
+</div>
+{{ end }}
+
+{{ define "appcode" }}
+<script>
+  $(document).ready(function () {
+      // Check if the current browser supports webauthn
+      if (!window.PublicKeyCredential) {
+        $("#submitRegistration").attr('disabled', 'disabled').toggleClass("btn-primary").toggleClass("btn-danger");
+        alert("This browser does not support Yubikeys");
+        return;
+      }
+
+      $("#registerForm").submit(function(e) {
+        e.preventDefault();
+        let data = Object.fromEntries(new FormData(e.target).entries());
+
+        $.ajax({
+          url: "/register/begin",
+          type: "POST",
+          data: JSON.stringify(data),
+          contentType: "application/json; charset=UTF-8",
+        }).then(function(credentialCreationOptions) {
+          console.log(credentialCreationOptions);
+        });
+
+        return false;
+      });
+
+  });
+</script>
 {{ end }}

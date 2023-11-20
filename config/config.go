@@ -1,22 +1,38 @@
 package config
 
 import (
+	"crypto/tls"
 	"fmt"
 
 	"github.com/bbengfort/yubikey/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/rotationalio/confire"
 	"github.com/rs/zerolog"
 )
 
 type Config struct {
 	Maintenance  bool                `default:"false"`
-	BindAddr     string              `split_words:"true" default:":8000"`
+	BindAddr     string              `split_words:"true" default:":443"`
 	Mode         string              `default:"release"`
 	LogLevel     logger.LevelDecoder `split_words:"true" default:"info"`
 	ConsoleLog   bool                `split_words:"true" default:"false"`
-	AllowOrigins []string            `split_words:"true" default:"http://localhost:8000"`
-	processed    bool                // set when the config is properly processed from the environment
+	AllowOrigins []string            `split_words:"true" default:"https://yubikey.local"`
+	WebAuthn     WebAuthnConfig      `split_words:"true"`
+	TLS          TLSConfig
+	processed    bool // set when the config is properly processed from the environment
+}
+
+type TLSConfig struct {
+	UseTLS   bool   `split_words:"true" default:"false"`
+	CertFile string `split_words:"true" default:"tmp/server.crt"`
+	KeyFile  string `split_words:"true" default:"tmp/server.key"`
+}
+
+type WebAuthnConfig struct {
+	RPID        string   `default:"yubikey.local"`
+	DisplayName string   `split_words:"true" default:"Yubikey Authn Debugger"`
+	Origins     []string `default:"https://yubikey.local"`
 }
 
 func New() (conf Config, err error) {
@@ -49,4 +65,24 @@ func (c Config) Validate() (err error) {
 
 func (c Config) GetLogLevel() zerolog.Level {
 	return zerolog.Level(c.LogLevel)
+}
+
+func (c TLSConfig) Config() *tls.Config {
+	if c.UseTLS {
+		cert, err := tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
+		if err != nil {
+			panic(err)
+		}
+
+		return &tls.Config{Certificates: []tls.Certificate{cert}}
+	}
+	return nil
+}
+
+func (c WebAuthnConfig) Config() *webauthn.Config {
+	return &webauthn.Config{
+		RPID:          c.RPID,
+		RPDisplayName: c.DisplayName,
+		RPOrigins:     c.Origins,
+	}
 }

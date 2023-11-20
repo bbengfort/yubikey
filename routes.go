@@ -71,6 +71,10 @@ func (s *Server) setupRoutes() (err error) {
 	// Entry point to primary web page
 	s.router.GET("/", s.Index)
 
+	// Yubikey registration
+	s.router.POST("/register/begin", s.BeginRegistration)
+	s.router.POST("/register/finish", s.FinishRegistration)
+
 	// Add the v1 API routes (currently the only version)
 	v1 := s.router.Group("/v1")
 	{

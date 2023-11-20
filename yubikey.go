@@ -16,6 +16,7 @@ import (
 	"github.com/bbengfort/yubikey/config"
 	"github.com/bbengfort/yubikey/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -51,6 +52,12 @@ func New(conf config.Config) (s *Server, err error) {
 		errc:    make(chan error, 1),
 		healthy: false,
 		ready:   false,
+		users:   NewUsers(),
+	}
+
+	// Create the webauthn instance
+	if s.authn, err = webauthn.New(s.conf.WebAuthn.Config()); err != nil {
+		return nil, err
 	}
 
 	// Create the Gin router and setup its routes
@@ -74,20 +81,23 @@ func New(conf config.Config) (s *Server, err error) {
 		ReadTimeout:  20 * time.Second,
 		WriteTimeout: 20 * time.Second,
 		IdleTimeout:  120 * time.Second,
+		TLSConfig:    s.conf.TLS.Config(),
 	}
 	return s, nil
 }
 
 type Server struct {
 	sync.RWMutex
-	conf    config.Config // configuration of the API server
-	srv     *http.Server  // handle to a custom http server with specified API defaults
-	router  *gin.Engine   // the http handler and associated middlware
-	healthy bool          // application state of the server for health checks
-	ready   bool          // application state of the server for ready checks
-	started time.Time     // the timestamp when the server was started
-	url     *url.URL      // the url of the service when it's running
-	errc    chan error    // synchronize shutdown gracefully
+	conf    config.Config      // configuration of the API server
+	authn   *webauthn.WebAuthn // the passwordless authentication module
+	srv     *http.Server       // handle to a custom http server with specified API defaults
+	users   *Users             // the users "database" for testing registration
+	router  *gin.Engine        // the http handler and associated middlware
+	healthy bool               // application state of the server for health checks
+	ready   bool               // application state of the server for ready checks
+	started time.Time          // the timestamp when the server was started
+	url     *url.URL           // the url of the service when it's running
+	errc    chan error         // synchronize shutdown gracefully
 }
 
 func (s *Server) Serve() (err error) {
