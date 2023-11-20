@@ -1,20 +1,21 @@
 package yubikey
 
 import (
-	"embed"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// content holds our static web server content.
-//
-//go:embed templates
-//go:embed static
-var content embed.FS
-
 func (s *Server) Index(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", &WebData{Version: Version()})
+}
+
+func (s *Server) Register(c *gin.Context) {
+	c.HTML(http.StatusOK, "register.html", &WebData{Version: Version()})
+}
+
+func (s *Server) Login(c *gin.Context) {
+	c.HTML(http.StatusOK, "login.html", &WebData{Version: Version()})
 }
 
 func (s *Server) NotFound(c *gin.Context) {

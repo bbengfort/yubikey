@@ -1,7 +1,6 @@
 package yubikey
 
 import (
-	"html/template"
 	"io/fs"
 	"net/http"
 	"time"
@@ -14,11 +13,9 @@ import (
 // Setup the server's middleware and routes.
 func (s *Server) setupRoutes() (err error) {
 	// Setup HTML template renderer
-	var html *template.Template
-	if html, err = template.ParseFS(content, "templates/*.html", "templates/**/*.html"); err != nil {
+	if s.router.HTMLRender, err = NewRender(content, "templates/*.html", "templates/layout/*.html", "templates/partials/*.html"); err != nil {
 		return err
 	}
-	s.router.SetHTMLTemplate(html)
 
 	// Setup static content server
 	var static fs.FS
@@ -70,10 +67,14 @@ func (s *Server) setupRoutes() (err error) {
 
 	// Entry point to primary web page
 	s.router.GET("/", s.Index)
+	s.router.GET("/register", s.Register)
+	s.router.GET("/login", s.Login)
 
 	// Yubikey registration
 	s.router.POST("/register/begin", s.BeginRegistration)
 	s.router.POST("/register/finish", s.FinishRegistration)
+	s.router.POST("/login/begin", s.BeginLogin)
+	s.router.POST("/login/finish", s.FinishLogin)
 
 	// Add the v1 API routes (currently the only version)
 	v1 := s.router.Group("/v1")

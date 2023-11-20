@@ -86,3 +86,11 @@ func (s *Server) FinishRegistration(c *gin.Context) {
 	user.AddCredential(*credential)
 	c.JSON(http.StatusOK, gin.H{"message": "registration successful"})
 }
+
+func (s *Server) BeginLogin(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "coming soon"})
+}
+
+func (s *Server) FinishLogin(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "coming soon"})
+}

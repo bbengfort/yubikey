@@ -1,0 +1,48 @@
+{{ template "layout" . }}
+{{ define "content" }}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <h2>Login with Yubikey</h2>
+    <form id="loginForm">
+      <div class="mb-3">
+        <label for="email" class="form-label">Email Address</label>
+        <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email address" aria-describedby="emailHelp" required />
+        <div id="emailHelp" class="form-text">Enter the email address you registered with your yubikey.</div>
+      </div>
+      <button id="submitLogin" type="submit" class="btn btn-primary">Login</button>
+    </form>
+  </div>
+</div>
+{{ end }}
+
+{{ define "appcode" }}
+<script>
+  $(document).ready(function () {
+    // Check if the current browser supports webauthn
+    if (!window.PublicKeyCredential) {
+      $("#submitLogin").attr('disabled', 'disabled').toggleClass("btn-primary").toggleClass("btn-danger");
+      alert("This browser does not support Yubikeys");
+      return;
+    }
+
+    $("#loginForm").submit(function(e) {
+      e.preventDefault();
+      $("#submitLogin").attr('disabled', 'disabled');
+      let data = Object.fromEntries(new FormData(e.target).entries());
+
+      $.ajax({
+        url: "/login/begin",
+        type: "POST",
+        data: JSON.stringify(data),
+        contentType: "application/json; charset=UTF-8",
+      }).then(function(data) {
+        // TODO
+        console.log(data)
+        $("#submitLogin").removeAttr('disabled');
+      });
+
+    });
+
+  });
+</script>
+{{ end }}
