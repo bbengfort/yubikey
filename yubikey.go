@@ -15,6 +15,7 @@ import (
 
 	"github.com/bbengfort/yubikey/config"
 	"github.com/bbengfort/yubikey/logger"
+	"github.com/bbengfort/yubikey/session"
 	"github.com/gin-gonic/gin"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/rs/zerolog"
@@ -60,6 +61,11 @@ func New(conf config.Config) (s *Server, err error) {
 		return nil, err
 	}
 
+	// Create the session store
+	if s.sessions, err = session.New(); err != nil {
+		return nil, err
+	}
+
 	// Create the Gin router and setup its routes
 	gin.SetMode(conf.Mode)
 	s.router = gin.New()
@@ -88,16 +94,17 @@ func New(conf config.Config) (s *Server, err error) {
 
 type Server struct {
 	sync.RWMutex
-	conf    config.Config      // configuration of the API server
-	authn   *webauthn.WebAuthn // the passwordless authentication module
-	srv     *http.Server       // handle to a custom http server with specified API defaults
-	users   *Users             // the users "database" for testing registration
-	router  *gin.Engine        // the http handler and associated middlware
-	healthy bool               // application state of the server for health checks
-	ready   bool               // application state of the server for ready checks
-	started time.Time          // the timestamp when the server was started
-	url     *url.URL           // the url of the service when it's running
-	errc    chan error         // synchronize shutdown gracefully
+	conf     config.Config      // configuration of the API server
+	authn    *webauthn.WebAuthn // the passwordless authentication module
+	srv      *http.Server       // handle to a custom http server with specified API defaults
+	users    *Users             // the users "database" for testing registration
+	sessions *session.Store     // the sessions "database" for testing registration and login
+	router   *gin.Engine        // the http handler and associated middlware
+	healthy  bool               // application state of the server for health checks
+	ready    bool               // application state of the server for ready checks
+	started  time.Time          // the timestamp when the server was started
+	url      *url.URL           // the url of the service when it's running
+	errc     chan error         // synchronize shutdown gracefully
 }
 
 func (s *Server) Serve() (err error) {

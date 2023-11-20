@@ -11,6 +11,7 @@ import (
 var (
 	ErrUserNotFound      = errors.New("user not found")
 	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrUnknownIDType     = errors.New("unknown user ID type must be uuid")
 )
 
 func NewUsers() *Users {
@@ -24,6 +25,29 @@ type Users struct {
 	sync.RWMutex
 	users  map[uuid.UUID]*User
 	emails map[string]uuid.UUID
+}
+
+func (db *Users) Lookup(id interface{}) (_ *User, err error) {
+	var userID uuid.UUID
+	switch idtyp := id.(type) {
+	case string:
+		if userID, err = uuid.Parse(idtyp); err != nil {
+			return nil, err
+		}
+	case []byte:
+		if userID, err = uuid.FromBytes(idtyp); err != nil {
+			return nil, err
+		}
+	case uuid.UUID:
+		userID = idtyp
+	default:
+		return nil, ErrUnknownIDType
+	}
+
+	if user, ok := db.users[userID]; ok {
+		return user, nil
+	}
+	return nil, ErrUserNotFound
 }
 
 func (db *Users) GetUser(email string) (*User, error) {
