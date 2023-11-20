@@ -22,6 +22,12 @@
 
 {{ define "appcode" }}
 <script>
+  // Base64 to ArrayBuffer
+  function bufferDecode(value) {
+    const bs = atob(value.replace(/_/g, '/').replace(/-/g, '+'))
+    return Uint8Array.from(bs, (c) => c.charCodeAt(0));
+  }
+
   $(document).ready(function () {
       // Check if the current browser supports webauthn
       if (!window.PublicKeyCredential) {
@@ -32,6 +38,7 @@
 
       $("#registerForm").submit(function(e) {
         e.preventDefault();
+        $("#submitRegistration").attr('disabled', 'disabled');
         let data = Object.fromEntries(new FormData(e.target).entries());
 
         $.ajax({
@@ -40,7 +47,16 @@
           data: JSON.stringify(data),
           contentType: "application/json; charset=UTF-8",
         }).then(function(credentialCreationOptions) {
-          console.log(credentialCreationOptions);
+          let publicKey = credentialCreationOptions.publicKey;
+          publicKey.challenge = bufferDecode(publicKey.challenge);
+          publicKey.user.id = bufferDecode(publicKey.user.id);
+
+          return navigator.credentials.create({
+            publicKey: publicKey
+          });
+        }).then(function(credential) {
+          $("#submitRegistration").removeAttr('disabled');
+          console.log(credential);
         });
 
         return false;
